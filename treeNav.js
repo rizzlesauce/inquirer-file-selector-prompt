@@ -28,7 +28,6 @@ class FileTreeSelectionPrompt extends Base {
 				{fullPath: fullPath, isDirectory: false, displayString: item};
 		});
 		const sorted =[...mapped.filter(item => item.isDirectory), ...mapped.filter(item => !item.isDirectory)];
-		console.log(sorted);
 		return sorted;
 	}
 	
@@ -39,7 +38,6 @@ class FileTreeSelectionPrompt extends Base {
 		this.directoryContents = this.getDirectoryContents();
 		this.shownList = [];
 		this.firstRender = true;
-		this.selected =  this.directoryContents[0];
 
 
 
@@ -69,9 +67,9 @@ class FileTreeSelectionPrompt extends Base {
 		events.normalizedDownKey
 			.pipe(takeUntil(events.line))
 			.forEach(this.onDownKey.bind(this));
-		//   events.keypress
-		//   .pipe(takeUntil(events.line))
-		//   .forEach(k => this.onKeypress.bind(this, k));
+		events.spaceKey
+			.pipe(takeUntil(events.line))
+			.forEach(this.onSpaceKey.bind(this));
 
 		events.line
 			.forEach(this.onSubmit.bind(this));
@@ -79,21 +77,68 @@ class FileTreeSelectionPrompt extends Base {
 		
 		cliCursor.hide();
 		if (this.firstRender) {
-			this.render();
+			this.renderNewDirectory(this.currentDirectory);
 		}
 
 		return this;
 
 	}
 
-	renderDirectoryContents(directoryContents = this.directoryContents, indent = 2) {
+	renderNewDirectory(path){
+		this.currentDirectory = path
+		this.directoryContents = this.getDirectoryContents()
+		this.shownList = this.getShownList()
+		this.selected = this.directoryContents.find(directoryItem => directoryItem.displayString === this.shownList[0])
+		this.renderCurrentDirectory()
+	}
+
+	
+
+	getShownList(){
+		let shownList = undefined
+		if(this.opt.onlyShowMatchingExtensions){
+			shownList = this.directoryContents.filter(directoryItem => {
+				return this.opts.extensions.some(extension => {
+					return directoryItem.displayString.endsWith(extension)
+				}) || directoryItem.isDirectory
+			})
+		}
+		else{
+			shownList = this.directoryContents
+		}
+
+		return shownList.map(item => item.displayString)
+	}
+
+	/**
+   * Render the prompt to screen
+   * @return {FileTreeSelectionPrompt} self
+   */
+
+	renderCurrentDirectory() {
+		// Render question
+		var message = this.getQuestion();
+
+		if (this.firstRender) {
+			message += chalk.dim('(Use arrow keys to navigate; esc to move to parent directory)');
+			this.firstRender = false;
+		}
+
+		if (this.status === 'answered') {
+			message += chalk.cyan(this.selected.fullPath);
+		}
+		else {
+			const directoryString = this.convertDirectoryContentToString();
+			message += '\n' + this.paginator.paginate(directoryString + '\n\n-----------------\n', this.shownList.indexOf(this.selected.displayString), this.opt.pageSize);
+		}
+
+		this.screen.render(message);
+	}
+
+	convertDirectoryContentToString(directoryContents = this.directoryContents, indent = 2) {
 		let output = '';
 
 		directoryContents.forEach(directoryItem => {
-			
-
-			this.shownList.push(directoryItem.displayString);
-
 			if (directoryItem.displayString === this.selected.displayString) {
 				output += '\n' + chalk.cyan(directoryItem.displayString);
 			}
@@ -106,50 +151,32 @@ class FileTreeSelectionPrompt extends Base {
 	}
 
 	/**
-   * Render the prompt to screen
-   * @return {FileTreeSelectionPrompt} self
-   */
-
-	render() {
-		// Render question
-		var message = this.getQuestion();
-
-		if (this.firstRender) {
-			message += chalk.dim('(Use arrow keys to navigate; esc to move to parent directory)');
-		}
-
-		if (this.status === 'answered') {
-			message += chalk.cyan(this.selected.fullPath);
-		}
-		else {
-			this.shownList = [];
-			const directoryString = this.renderDirectoryContents();
-			message += '\n' + this.paginator.paginate(directoryString + '\n\n-----------------\n', this.shownList.indexOf(this.selected.displayString), this.opt.pageSize);
-		}
-
-		this.firstRender = false;
-		this.screen.render(message);
-	}
-
-	/**
    * When user press `enter` key
    */
 
 	onSubmit() {
-		if(this.selected.isDirectory){
+		if(!this.selected.isDirectory){
 			this.status = 'answered';
 
-			this.render();
+			this.renderCurrentDirectory();
 
 			this.screen.done();
 			cliCursor.show();
 			this.done(this.selected.fullPath);
 		}
 		else{
-			this.currentDirectory = this.selected.fullPath;
-			this.directoryContents = this.getDirectoryContents();
-			this.selected = this.directoryContents[0];
-			this.render();
+			this.renderNewDirectory(this.selected.fullPath)
+		}
+	}
+
+	checkValidSelection(){
+		if(this.selected.isDirectory){
+			return this.selectionType === 'folder'
+		}
+		else {
+			return this.selectionType === 'file' && this.opts.extensions.some(extension => {
+				return directoryItem.displayString.endsWith(extension)
+			})
 		}
 	}
 
@@ -166,7 +193,7 @@ class FileTreeSelectionPrompt extends Base {
 
 		this.selected = this.directoryContents.find(item => item.displayString === this.shownList[index]);
 
-		this.render();
+		this.renderCurrentDirectory();
 	}
 
 	/**
@@ -181,12 +208,10 @@ class FileTreeSelectionPrompt extends Base {
 	}
 
 	onSpaceKey() {
-		if (!this.selected.children) {
+		if (!this.selected.isDirectory) {
 			return;
 		}
-
-		this.selected.open = !this.selected.open;
-		this.render();
+		this.renderNewDirectory(this.selected.fullPath);
 	}
 }
 

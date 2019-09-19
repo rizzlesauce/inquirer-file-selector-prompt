@@ -39,7 +39,16 @@ class FileTreeSelectionPrompt extends Base {
 		this.shownList = [];
 		this.firstRender = true;
 
-
+		this.opt = {
+			...{
+			  path: null,
+			  pageSize: 10,
+			  onlyShowMatchingExtensions: false,
+			  selectionType: 'file',
+			  extensions: []
+			},
+			...this.opt
+		  }
 
 		// Make sure no default is set (so it won't be printed)
 		this.opt.default = null;
@@ -98,7 +107,7 @@ class FileTreeSelectionPrompt extends Base {
 		let shownList = undefined
 		if(this.opt.onlyShowMatchingExtensions){
 			shownList = this.directoryContents.filter(directoryItem => {
-				return this.opts.extensions.some(extension => {
+				return this.opt.extensions.some(extension => {
 					return directoryItem.displayString.endsWith(extension)
 				}) || directoryItem.isDirectory
 			})
@@ -143,9 +152,14 @@ class FileTreeSelectionPrompt extends Base {
 				output += '\n' + chalk.cyan(directoryItem.displayString);
 			}
 			else {
+				if(this.checkValidExtension(directoryItem.displayString)){
 				output += '\n' +  directoryItem.displayString;
 			}
-		});
+			else{
+				output += '\n' +  chalk.hex('#e6e6e6')(directoryItem.displayString);
+			}
+		}
+	});
 
 		return output;
 	}
@@ -171,14 +185,19 @@ class FileTreeSelectionPrompt extends Base {
 
 	checkValidSelection(){
 		if(this.selected.isDirectory){
-			return this.selectionType === 'folder'
+			return this.opt.selectionType === 'folder'
 		}
 		else {
-			return this.selectionType === 'file' && this.opts.extensions.some(extension => {
-				return directoryItem.displayString.endsWith(extension)
-			})
+			return this.opt.selectionType === 'file' && this.checkValidExtension(this.selected.displayString)
+			
 		}
 	}
+
+	checkValidExtension(item){
+		return this.opt.extensions.length ===0 || this.opt.extensions.some(extension => {
+			return item.endsWith(extension)
+	})
+}
 
 	moveselected(distance = 0) {
 		const currentIndex = this.shownList.indexOf(this.selected.displayString);

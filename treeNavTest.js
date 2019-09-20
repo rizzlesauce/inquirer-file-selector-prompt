@@ -8,7 +8,8 @@ inquirer
 		{
 			type: 'file-tree-selection',
 			name: 'file',
-			message: 'choose a file'
+			message: 'choose a file',
+			extensions: ['js']
 		}
 	])
 	.then(answers => {

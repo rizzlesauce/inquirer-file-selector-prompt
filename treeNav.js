@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const chalk = require('chalk');
-const {takeUntil} = require('rxjs/operators');
+const {filter, takeWhile} = require('rxjs/operators');
 const figures = require('figures');
 const cliCursor = require('cli-cursor');
 const Base = require('inquirer/lib/prompts/base');
@@ -42,10 +42,10 @@ class FileTreeSelectionPrompt extends Base {
 		this.opt = {
 			...{
 			  path: null,
-			  pageSize: 10,
+			  pageSize: 10 ,
 			  onlyShowMatchingExtensions: false,
 			  selectionType: 'file',
-			  extensions: []
+			  extensions: [],
 			},
 			...this.opt
 		  }
@@ -66,24 +66,29 @@ class FileTreeSelectionPrompt extends Base {
 	_run(cb) {
 		this.done = cb;
 
-		var self = this;
+		const events = observe(this.rl)
 
-
-		var events = observe(this.rl);
 		events.normalizedUpKey
-			.pipe(takeUntil(events.line))
+			.pipe(takeWhile(() => this.status !== 'answered'))
 			.forEach(this.onUpKey.bind(this));
 		events.normalizedDownKey
-			.pipe(takeUntil(events.line))
-			.forEach(this.onDownKey.bind(this));
+		.pipe(takeWhile(() => this.status !== 'answered'))
+		.forEach(this.onDownKey.bind(this));
 		events.spaceKey
-			.pipe(takeUntil(events.line))
-			.forEach(this.onSpaceKey.bind(this));
+		.pipe(takeWhile(() => this.status !== 'answered'))
+		.forEach(this.onSpaceKey.bind(this));
+		events.keypress
+		.pipe(takeWhile(() => this.status !== 'answered'))
+		.pipe(filter(key => key.key.name === 'escape'))
+		.forEach(this.onEscKey.bind(this));
+		
+
+
 
 		events.line
 			.forEach(this.onSubmit.bind(this));
 
-		
+
 		cliCursor.hide();
 		if (this.firstRender) {
 			this.renderNewDirectory(this.currentDirectory);
@@ -152,11 +157,11 @@ class FileTreeSelectionPrompt extends Base {
 				output += '\n' + chalk.cyan(directoryItem.displayString);
 			}
 			else {
-				if(this.checkValidExtension(directoryItem.displayString)){
+				if(this.checkValidExtension(directoryItem.displayString) || directoryItem.isDirectory){
 				output += '\n' +  directoryItem.displayString;
 			}
 			else{
-				output += '\n' +  chalk.hex('#e6e6e6')(directoryItem.displayString);
+				output += '\n' +  chalk.hex('#c9c9c9')(directoryItem.displayString);
 			}
 		}
 	});
@@ -169,7 +174,12 @@ class FileTreeSelectionPrompt extends Base {
    */
 
 	onSubmit() {
-		if(!this.selected.isDirectory){
+		const valid = this.checkValidSelection()
+		if (!valid) {
+		  return;
+		}
+		else{
+	  
 			this.status = 'answered';
 
 			this.renderCurrentDirectory();
@@ -178,10 +188,9 @@ class FileTreeSelectionPrompt extends Base {
 			cliCursor.show();
 			this.done(this.selected.fullPath);
 		}
-		else{
-			this.renderNewDirectory(this.selected.fullPath)
-		}
 	}
+		
+	
 
 	checkValidSelection(){
 		if(this.selected.isDirectory){
@@ -199,10 +208,9 @@ class FileTreeSelectionPrompt extends Base {
 	})
 }
 
-	moveselected(distance = 0) {
+	moveSelected(distance = 0) {
 		const currentIndex = this.shownList.indexOf(this.selected.displayString);
 		let index = currentIndex + distance;
-
 		if (index >= this.shownList.length) {
 			index = this.shownList.length - 1;
 		}
@@ -219,11 +227,11 @@ class FileTreeSelectionPrompt extends Base {
    * When user press a key
    */
 	onUpKey() {
-		this.moveselected(-1);
+		this.moveSelected(-1);
 	}
 
 	onDownKey() {
-		this.moveselected(1);
+		this.moveSelected(1);
 	}
 
 	onSpaceKey() {
@@ -232,6 +240,19 @@ class FileTreeSelectionPrompt extends Base {
 		}
 		this.renderNewDirectory(this.selected.fullPath);
 	}
+	onSpaceKey() {
+		if (!this.selected.isDirectory) {
+			return;
+		}
+		this.renderNewDirectory(this.selected.fullPath);
+	}
+
+	onEscKey(){
+		const splCurrentDirectory = this.currentDirectory.split('\\')
+		splCurrentDirectory.pop()
+		this.renderNewDirectory(splCurrentDirectory.join('\\'))
+	}
+
 }
 
 module.exports = FileTreeSelectionPrompt;

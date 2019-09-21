@@ -12,7 +12,7 @@ const figures = require('figures');
 const cliCursor = require('cli-cursor');
 const Base = require('inquirer/lib/prompts/base');
 const observe = require('inquirer/lib/utils/events');
-const Paginator = require('inquirer/lib/utils/paginator');
+const Paginator = require('./paginator');
 
 
 
@@ -131,12 +131,14 @@ class FileTreeSelectionPrompt extends Base {
 
 	renderCurrentDirectory() {
 		// Render question
-		var message = this.getQuestion();
+		let message = this.getQuestion();
 
 		if (this.firstRender) {
 			message += chalk.dim('(Use arrow keys to navigate; esc to move to parent directory)');
 			this.firstRender = false;
 		}
+
+		message += ' ' + this.currentDirectory
 
 		if (this.status === 'answered') {
 			message += chalk.cyan(this.selected.fullPath);

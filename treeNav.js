@@ -134,18 +134,18 @@ class FileTreeSelectionPrompt extends Base {
 		let message = this.getQuestion();
 
 		if (this.firstRender) {
-			message += chalk.dim('(Use arrow keys to navigate; esc to move to parent directory)');
 			this.firstRender = false;
 		}
 
-		message += ' ' + this.currentDirectory
+		
 
 		if (this.status === 'answered') {
 			message += chalk.cyan(this.selected.fullPath);
 		}
 		else {
+			message += ' ' + chalk.gray(this.currentDirectory)
 			const directoryString = this.convertDirectoryContentToString();
-			message += '\n' + this.paginator.paginate(directoryString + '\n\n-----------------\n', this.shownList.indexOf(this.selected.displayString), this.opt.pageSize);
+			message += '\n' + this.paginator.paginate(directoryString + '\n \n\n', this.shownList.indexOf(this.selected.displayString), this.opt.pageSize);
 		}
 
 		this.screen.render(message);
@@ -156,8 +156,13 @@ class FileTreeSelectionPrompt extends Base {
 
 		directoryContents.forEach(directoryItem => {
 			if (directoryItem.displayString === this.selected.displayString) {
-				output += '\n' + chalk.cyan(directoryItem.displayString);
+				if(this.checkValidExtension(this.selected.displayString) || this.selected.isDirectory){
+					output += '\n' + chalk.hex('#0598BC')(directoryItem.displayString);
+				}
+				else{
+					output += '\n' + chalk.hex('#8dabb3')(directoryItem.displayString);
 			}
+		}
 			else {
 				if(this.checkValidExtension(directoryItem.displayString) || directoryItem.isDirectory){
 				output += '\n' +  directoryItem.displayString;

@@ -46,7 +46,8 @@ class Paginator {
 		var infinite = _.flatten([lines]);    
 
 		var section = infinite.splice(firstIndex, pageSize).join('\n');
-		return section + '\n' + chalk.dim('(Move up and down to reveal more choices)');
+		section += '\n' + chalk.dim('========================================================================================'); 
+		return section + '\n' + chalk.dim('(Press up and down to navigate, space to enter directory, esc to go to parent directory)');
 	}
 }
 

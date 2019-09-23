@@ -1,7 +1,7 @@
 const inquirer = require('inquirer');
-const inquirerFileTreeSelection = require('./treeNav');
+const fileSelector = require('./index.js');
 
-inquirer.registerPrompt('file-tree-selection', inquirerFileTreeSelection);
+inquirer.registerPrompt('file-tree-selection', fileSelector);
 
 inquirer
 	.prompt([

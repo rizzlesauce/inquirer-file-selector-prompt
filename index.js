@@ -38,6 +38,7 @@ class FileTreeSelectionPrompt extends Base {
 		this.directoryContents = this.getDirectoryContents();
 		this.shownList = [];
 		this.firstRender = true;
+		this.invalidSelection = false;
 
 		this.opt = {
 			...{
@@ -103,6 +104,7 @@ class FileTreeSelectionPrompt extends Base {
 		this.directoryContents = this.getDirectoryContents()
 		this.shownList = this.getShownList()
 		this.selected = this.directoryContents.find(directoryItem => directoryItem.displayString === this.shownList[0])
+		this.invalidSelection = false;
 		this.renderCurrentDirectory()
 	}
 
@@ -132,6 +134,7 @@ class FileTreeSelectionPrompt extends Base {
 	renderCurrentDirectory() {
 		// Render question
 		let message = this.getQuestion();
+		
 
 		if (this.firstRender) {
 			this.firstRender = false;
@@ -144,6 +147,9 @@ class FileTreeSelectionPrompt extends Base {
 		}
 		else {
 			message += ' ' + chalk.gray(this.currentDirectory)
+			if(this.invalidSelection){
+				message+='\n' + chalk.red("Invalid selection. Please choose another option.") +'\n';
+			}
 			const directoryString = this.convertDirectoryContentToString();
 			message += '\n' + this.paginator.paginate(directoryString + '\n \n\n', this.shownList.indexOf(this.selected.displayString), this.opt.pageSize);
 		}
@@ -183,7 +189,9 @@ class FileTreeSelectionPrompt extends Base {
 	onSubmit() {
 		const valid = this.checkValidSelection()
 		if (!valid) {
-		  return;
+			this.invalidSelection = true;
+			this.renderCurrentDirectory()
+			return;
 		}
 		else{
 	  

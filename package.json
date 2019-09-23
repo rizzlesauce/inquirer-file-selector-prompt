@@ -1,5 +1,5 @@
 {
-  "name": "inquirer-file-selector",
+  "name": "inquirer-file-selector-prompt",
   "version": "1.0.0",
   "description": "File selector interface for inquirer",
   "main": "index.js",

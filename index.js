@@ -12,7 +12,7 @@ const figures = require('figures');
 const cliCursor = require('cli-cursor');
 const Base = require('inquirer/lib/prompts/base');
 const observe = require('inquirer/lib/utils/events');
-const Paginator = require('./paginator');
+const Paginator = require('./paginatorNonInfinite');
 
 
 

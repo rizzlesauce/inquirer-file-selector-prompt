@@ -174,7 +174,7 @@ class FileTreeSelectionPrompt extends Base {
 				output += '\n' +  directoryItem.displayString;
 			}
 			else{
-				output += '\n' +  chalk.hex('#c9c9c9')(directoryItem.displayString);
+				output += '\n' +  chalk.hex('#8f8f8f')(directoryItem.displayString);
 			}
 		}
 	});
